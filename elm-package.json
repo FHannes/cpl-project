@@ -1,7 +1,7 @@
 {
     "version": "1.0.0",
     "summary": "My todo application for the Elm course.",
-    "repository": "https://github.com/USER/PROJECT.git",
+    "repository": "https://github.com/FHannes/elm-project.git",
     "license": "BSD3",
     "source-directories": [
         "."
