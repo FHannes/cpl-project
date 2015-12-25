@@ -1,6 +1,8 @@
 module Main where
 
 import Html exposing ( Html )
+import Html.Events as E
+import Html.Attributes as A
 import Signal
 
 -- Name: Frédéric Hannes
@@ -60,6 +62,18 @@ import Signal
 
 -- Start of program
 
-main : Signal Html.Html
-main = Html.text "This should work."
-       |> Signal.constant
+main : Signal Html
+main = Signal.constant <| Html.div [A.class "container"]
+  [ Html.h1 [] [Html.text "To do"]
+  , Html.div [A.class "panel panel-default"]
+    [ Html.div[A.class "panel-heading"]
+      [ Html.h4 []
+        [ Html.i [A.class "glyphicon glyphicon-envelope"] []
+        , Html.text " E-mail"
+        ]
+      ]
+    , Html.div[A.class "panel-body"] [Html.text "This should work."]
+    ]
+    , Html.h1 [] [Html.text "Done"]
+    , Html.h1 [] [Html.text "Reminder"]
+  ]
