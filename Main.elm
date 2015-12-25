@@ -5,7 +5,7 @@ import Html.Events as E
 import Html.Attributes as A
 import Signal
 
-import MailItem
+import Manager
 import Static exposing ( Email )
 
 -- Name: Frédéric Hannes
@@ -65,10 +65,13 @@ import Static exposing ( Email )
 
 -- Start of program
 
+mail : Email
+mail = { from = "hello@test.me"
+  , to = "goodbye@test.me"
+  , title = "Shorter than 200"
+  , body = """This is the body of an email with less than 200 characters."""
+  , date = "2015-09-30"
+  }
+
 main : Signal Html
-main = Signal.constant <| Html.div [ A.class "container" ]
-  (List.append
-    ((Html.h1 [] [ Html.text "To do" ]) :: List.map MailItem.view Static.emails)
-    [ Html.h1 [] [ Html.text "Done" ]
-    , Html.h1 [] [ Html.text "Reminder" ]
-    ])
+main = Signal.constant <| Manager.view (Manager.addItem mail Manager.init)
