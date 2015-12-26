@@ -39,16 +39,7 @@ view address model title subtitle content =
           ]
           [ Html.span [ A.class "glyphicon glyphicon-pushpin" ] [] ]
         ]
-      , Html.h4 []
-        (title ++
-          (if model.pinned then
-            [ Html.text "\160"
-            , Html.span [ A.class "badge" ] [ Html.text "PINNED" ]
-            ]
-          else
-            []
-          )
-        )
+      , Html.h4 [] title
       , Html.p [] subtitle
       ]
     , Html.div [ A.class "panel-body" ] [ content ]
