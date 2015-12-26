@@ -59,11 +59,29 @@ import Static exposing ( Email )
 
 
 -- * Come up with your own extension!
+-- http://getbootstrap.com/components/#pagination ?
 -- Status: Completed / Attempted / Unattempted
 -- Summary:
 
 
 -- Start of program
 
+data : Manager.Model
+data =
+  Manager.addTodos Static.reminders (Manager.addMails Static.emails Manager.init)
+
+mailbox : Signal.Mailbox (Maybe Manager.Action)
+mailbox = Signal.mailbox Nothing
+
+state : Signal Manager.Model
+state =
+  let update action model =
+    case action of
+      Just a -> Manager.update a model
+      _ -> model
+  in Signal.foldp update data mailbox.signal
+
 main : Signal Html
-main = Signal.constant <| Manager.view (Manager.addTodos Static.reminders (Manager.addMails Static.emails Manager.init))
+main =
+  let view = Manager.view (Signal.forwardTo mailbox.address Just)
+  in Signal.map view state
