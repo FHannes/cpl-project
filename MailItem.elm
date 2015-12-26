@@ -31,18 +31,9 @@ view address model =
   let mail = model.data
   in ListItem.view
     (Signal.forwardTo address LIAction)
-    (Html.div []
-      [ Html.h4 []
-        (if model.item.pinned then
-          [ Html.span [ A.class "glyphicon glyphicon-envelope" ] []
-          , Html.text <| "\160" ++ mail.date ++ "\160|\160" ++ mail.title
-          , Html.span [ A.class "badge" ] [ Html.text "PINNED" ]
-          ]
-        else
-          [ Html.span [ A.class "glyphicon glyphicon-envelope" ] []
-          , Html.text <| "\160" ++ mail.date ++ "\160|\160" ++ mail.title
-          ]
-        )
-      , Html.p [] [ Html.text <| "From: " ++ mail.from ]
-      ])
+    model.item
+    [ Html.span [ A.class "glyphicon glyphicon-envelope" ] []
+    , Html.text <| "\160" ++ mail.date ++ "\160|\160" ++ mail.title
+    ]
+    [ Html.text <| "From: " ++ mail.from ]
     (Html.text mail.body)

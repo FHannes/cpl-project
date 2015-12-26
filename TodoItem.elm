@@ -30,10 +30,9 @@ view address model =
   let reminder = model.data
   in ListItem.view
     (Signal.forwardTo address LIAction)
-    (Html.div []
-      [ Html.h4 []
-        [ Html.span [ A.class "glyphicon glyphicon-time" ] []
-        , Html.text <| "\160" ++ reminder.created
-        ]
-      ])
+    model.item
+    [ Html.span [ A.class "glyphicon glyphicon-time" ] []
+    , Html.text <| "\160" ++ reminder.created
+    ]
+    []
     (Html.text reminder.body)

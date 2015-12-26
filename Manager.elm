@@ -69,6 +69,6 @@ viewItem address (id, model) =
 
 view : Signal.Address Action -> Model -> Html
 view address model = Html.div [ A.class "container" ]
-  ([ Html.h1 [] [ Html.text "To do" ] ] ++
+  ([ Html.h1 [] [ Html.text <| "To do" ] ] ++
   List.map (viewItem address) model.items ++
   [ Html.h1 [] [ Html.text "Done" ] ])

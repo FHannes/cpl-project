@@ -21,25 +21,35 @@ update action model =
 
 -- VIEW
 
-view : Signal.Address Action -> Html -> Html -> Html
-view address header content =
+view : Signal.Address Action -> Model -> List Html -> List Html -> Html -> Html
+view address model title subtitle content =
   Html.div [ A.class "panel panel-default" ]
     [ Html.div [ A.class "panel-heading" ]
       [ Html.div [ A.class "btn-group pull-right" ]
         [ Html.button
           [ A.class "btn btn-default"
           , A.title "Mark as Done"
-          , E.onClick address Pin
+          , E.onClick address MarkDone
           ]
           [ Html.span [ A.class "glyphicon glyphicon-ok" ] [] ]
         , Html.button
-          [ A.class "btn btn-default"
+          [ A.class <| "btn btn-" ++ (if model.pinned then "primary" else "default")
           , A.title "Pin"
-          , E.onClick address MarkDone
+          , E.onClick address Pin
           ]
           [ Html.span [ A.class "glyphicon glyphicon-pushpin" ] [] ]
         ]
-      , header
+      , Html.h4 []
+        (title ++
+          (if model.pinned then
+            [ Html.text "\160"
+            , Html.span [ A.class "badge" ] [ Html.text "PINNED" ]
+            ]
+          else
+            []
+          )
+        )
+      , Html.p [] subtitle
       ]
     , Html.div [ A.class "panel-body" ] [ content ]
     ]
