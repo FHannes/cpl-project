@@ -27,7 +27,7 @@ view address model title subtitle content =
     [ Html.div [ A.class "panel-heading" ]
       [ Html.div [ A.class "btn-group pull-right" ]
         [ Html.button
-          [ A.class "btn btn-default"
+          [ A.class <| "btn btn-" ++ (if model.done then "success" else "default")
           , A.title "Mark as Done"
           , E.onClick address MarkDone
           ]

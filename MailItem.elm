@@ -33,7 +33,7 @@ view address model =
     (Signal.forwardTo address LIAction)
     model.item
     [ Html.span [ A.class "glyphicon glyphicon-envelope" ] []
-    , Html.text <| "\160" ++ mail.date ++ "\160|\160" ++ mail.title
+    , Html.text <| "\160" ++ mail.date ++ "\160| " ++ mail.title
     ]
     [ Html.text <| "From: " ++ mail.from ]
     (Html.text mail.body)

@@ -57,6 +57,21 @@ sortModel (id1, im1) (id2, im2) =
       if li1.pinned == True then LT else GT
     else if (Date.toTime li1.date) < (Date.toTime li2.date) then LT else GT
 
+getDone : Bool -> List (ID, ItemModel) -> List (ID, ItemModel)
+getDone done list =
+  case List.head list of
+    Nothing -> []
+    Just (id, im) ->
+      let li = (
+        case im of
+          Mail mm -> mm.item
+          Todo mm -> mm.item
+      ) in
+        if li.done == done then
+          getDone done (List.drop 1 list)
+        else
+          (id, im) :: (getDone done (List.drop 1 list))
+
 -- UPDATE
 
 update : Action -> Model -> Model
@@ -92,5 +107,6 @@ view address model =
   let sortedModel = {model | items = List.sortWith sortModel model.items }
   in Html.div [ A.class "container" ]
     ([ Html.h1 [] [ Html.text <| "To do" ] ] ++
-    List.map (viewItem address) sortedModel.items ++
-    [ Html.h1 [] [ Html.text "Done" ] ])
+    List.map (viewItem address) (getDone True sortedModel.items) ++
+    [ Html.h1 [] [ Html.text "Done" ] ] ++
+    List.map (viewItem address) (getDone False sortedModel.items))
