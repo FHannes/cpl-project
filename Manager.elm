@@ -37,6 +37,26 @@ addTodos reminders model =
       let newModel = addTodos (List.drop 1 reminders) { model | curId = model.curId + 1 }
       in { newModel | items = ( model.curId, Todo <| TodoItem.init reminder) :: newModel.items }
 
+sortModel : (ID,  ItemModel) -> (ID, ItemModel) -> Order
+sortModel (id1, im1) (id2, im2) =
+  let
+    li1 = (
+      case im1 of
+        Mail mm -> mm.item
+        Todo mm -> mm.item
+    )
+    li2 = (
+      case im2 of
+        Mail mm -> mm.item
+        Todo mm -> mm.item
+    )
+  in
+    if li1.done /= li2.done then
+      if li1.done == True then GT else LT
+    else if li1.pinned /= li2.pinned then
+      if li1.pinned == True then LT else GT
+    else if (Date.toTime li1.date) < (Date.toTime li2.date) then LT else GT
+
 -- UPDATE
 
 update : Action -> Model -> Model
@@ -68,7 +88,9 @@ viewItem address (id, model) =
     Todo reminder -> TodoItem.view (Signal.forwardTo address (TodoAction id)) reminder
 
 view : Signal.Address Action -> Model -> Html
-view address model = Html.div [ A.class "container" ]
-  ([ Html.h1 [] [ Html.text <| "To do" ] ] ++
-  List.map (viewItem address) model.items ++
-  [ Html.h1 [] [ Html.text "Done" ] ])
+view address model =
+  let sortedModel = {model | items = List.sortWith sortModel model.items }
+  in Html.div [ A.class "container" ]
+    ([ Html.h1 [] [ Html.text <| "To do" ] ] ++
+    List.map (viewItem address) sortedModel.items ++
+    [ Html.h1 [] [ Html.text "Done" ] ])
