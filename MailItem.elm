@@ -4,6 +4,7 @@ import Date exposing ( Date )
 import Html exposing ( Html )
 import Html.Events as E
 import Html.Attributes as A
+import String
 
 import ListItem
 import Static exposing ( Email )
@@ -26,14 +27,28 @@ update action model =
 
 -- VIEW
 
-view : Signal.Address Action -> Model -> Html
-view address model =
+view : Signal.Address Action -> Bool -> Model -> Html
+view address selected model =
   let mail = model.data
   in ListItem.view
     (Signal.forwardTo address LIAction)
+    selected
     model.item
     [ Html.span [ A.class "glyphicon glyphicon-envelope" ] []
     , Html.text <| "\160" ++ mail.date ++ "\160| " ++ mail.title
     ]
     [ Html.text <| "From: " ++ mail.from ]
-    (Html.text mail.body)
+    (if (String.length mail.body) <= 200 then
+      [ Html.text mail.body ]
+    else
+      [ Html.text (if model.expanded then mail.body else (String.slice 0 200 mail.body) ++ "...")
+      , Html.button
+        [ A.class "btn btn-default"
+        , E.onClick address Expand
+        ]
+        [ Html.span [ A.class <| "glyphicon glyphicon-chevron-" ++
+          (if model.expanded then "up" else "down") ] []
+        , Html.text <| "\160" ++ (if model.expanded then "Less" else "More")
+        ]
+      ]
+    )

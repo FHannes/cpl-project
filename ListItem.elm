@@ -21,9 +21,9 @@ update action model =
 
 -- VIEW
 
-view : Signal.Address Action -> Model -> List Html -> List Html -> Html -> Html
-view address model title subtitle content =
-  Html.div [ A.class "panel panel-default" ]
+view : Signal.Address Action -> Bool -> Model -> List Html -> List Html -> List Html -> Html
+view address selected model title subtitle content =
+  Html.div [ A.class <| "panel panel-" ++ (if selected then "info" else "default") ]
     [ Html.div [ A.class "panel-heading" ]
       [ Html.div [ A.class "btn-group pull-right" ]
         [ Html.button
@@ -42,5 +42,5 @@ view address model title subtitle content =
       , Html.h4 [] title
       , Html.p [] subtitle
       ]
-    , Html.div [ A.class "panel-body" ] [ content ]
+    , Html.div [ A.class "panel-body" ] content
     ]

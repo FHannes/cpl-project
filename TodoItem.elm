@@ -25,14 +25,15 @@ update action model =
 
 -- VIEW
 
-view : Signal.Address Action -> Model -> Html
-view address model =
+view : Signal.Address Action -> Bool -> Model -> Html
+view address selected model =
   let reminder = model.data
   in ListItem.view
     (Signal.forwardTo address LIAction)
+    selected
     model.item
     [ Html.span [ A.class "glyphicon glyphicon-time" ] []
     , Html.text <| "\160" ++ reminder.created
     ]
     []
-    (Html.text reminder.body)
+    [ Html.text reminder.body ]

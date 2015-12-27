@@ -14,12 +14,13 @@ type ItemModel = Mail MailItem.Model | Todo TodoItem.Model
 type alias Model =
   { items: List (ID, ItemModel)
   , curId: ID
+  , selected: ID
   }
 
 type Action = MailAction ID MailItem.Action | TodoAction ID TodoItem.Action
 
 init : Model
-init = { items = [], curId = 0 }
+init = { items = [], curId = 0, selected = 0 }
 
 addMails : List Email -> Model -> Model
 addMails mails model =
@@ -96,17 +97,24 @@ update action model =
 
 -- VIEW
 
-viewItem : Signal.Address Action -> (ID, ItemModel) -> Html
-viewItem address (id, model) =
+viewItem : Signal.Address Action -> ID -> (ID, ItemModel) -> Html
+viewItem address selected (id, model) =
   case model of
-    Mail mail -> MailItem.view (Signal.forwardTo address (MailAction id)) mail
-    Todo reminder -> TodoItem.view (Signal.forwardTo address (TodoAction id)) reminder
+    Mail mail -> MailItem.view (Signal.forwardTo address (MailAction id)) (id == selected) mail
+    Todo reminder -> TodoItem.view (Signal.forwardTo address (TodoAction id)) (id == selected) reminder
 
 view : Signal.Address Action -> Model -> Html
 view address model =
-  let sortedModel = {model | items = List.sortWith sortModel model.items }
-  in Html.div [ A.class "container" ]
+  let
+    sortedModel = {model | items = List.sortWith sortModel model.items }
+    doneItems = getDone False sortedModel.items
+  in
+    Html.div [ A.class "container" ]
     ([ Html.h1 [] [ Html.text <| "To do" ] ] ++
-    List.map (viewItem address) (getDone True sortedModel.items) ++
-    [ Html.h1 [] [ Html.text "Done" ] ] ++
-    List.map (viewItem address) (getDone False sortedModel.items))
+    List.map (viewItem address model.selected) (getDone True sortedModel.items) ++
+    (if not (List.isEmpty doneItems) then
+      ([ Html.h1 [] [ Html.text "Done" ] ] ++
+        List.map (viewItem address model.selected) doneItems)
+    else
+      [])
+    )
