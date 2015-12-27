@@ -28,7 +28,7 @@ view address selected model title subtitle content =
       [ Html.div [ A.class "btn-group pull-right" ]
         [ Html.button
           [ A.class <| "btn btn-" ++ (if model.done then "success" else "default")
-          , A.title "Mark as Done"
+          , A.title (if model.done then "Undo" else "Mark as Done")
           , E.onClick address MarkDone
           ]
           [ Html.span [ A.class "glyphicon glyphicon-ok" ] [] ]

@@ -42,6 +42,7 @@ view address selected model =
       [ Html.text mail.body ]
     else
       [ Html.text (if model.expanded then mail.body else (String.slice 0 200 mail.body) ++ "...")
+      , Html.br [] []
       , Html.button
         [ A.class "btn btn-default"
         , E.onClick address Expand
