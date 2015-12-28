@@ -20,6 +20,7 @@ type alias Model =
   , reminder: { date: String, body: String }
   , reversed: Bool
   , doneVisible: Bool
+  , addVisible: Bool
   }
 
 type Action
@@ -34,6 +35,7 @@ type Action
   | TogglePinned
   | ToggleDone
   | ToggleDoneVisibility
+  | ToggleAddVisibility
 
 init : Model
 init =
@@ -43,6 +45,7 @@ init =
   , reminder = { date = "2015-01-01", body = "" }
   , reversed = False
   , doneVisible = True
+  , addVisible = False
   }
 
 addMails : List Email -> Model -> Model
@@ -225,6 +228,8 @@ update action model =
             Todo mm -> update (TodoAction id (TodoItem.LIAction action)) model
     ToggleDoneVisibility ->
       updModel { model | doneVisible = not model.doneVisible }
+    ToggleAddVisibility ->
+      updModel { model | addVisible = not model.addVisible }
 
 -- VIEW
 
@@ -343,6 +348,12 @@ viewHotkeys =
         , Html.span [ A.class "label label-default" ] [ Html.text "G" ]
         , Html.text ": Toggle the visibility of completed items."
         ]
+      , Html.p []
+        [ Html.span [ A.class "label label-default" ] [ Html.text "Alt" ]
+        , Html.text "\160+\160"
+        , Html.span [ A.class "label label-default" ] [ Html.text "A" ]
+        , Html.text ": Toggle the visibility of \"Add Reminder\" panelm."
+        ]
       ]
     ]
 
@@ -375,5 +386,10 @@ view address model =
       [ Html.div [ A.class "col-md-8" ]
         [ viewItems address model ]
       , Html.div [ A.class "col-md-4" ]
-        [ viewAddReminder address model, viewHotkeys ]
+        (
+          if model.addVisible then
+            [ viewAddReminder address model, viewHotkeys ]
+          else
+            [ viewHotkeys ]
+        )
       ]

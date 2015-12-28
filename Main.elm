@@ -27,8 +27,10 @@ import Static exposing ( Email )
 
 -- * Hide the 'add reminder' functionality and add a hotkey to toggle its
 -- * visibility.
--- Status: Completed / Attempted / Unattempted
+-- Status: Completed
 -- Summary:
+--   The hotkey Alt+A was added to toggle the visibility of the "Add Reminder"
+--   panel which is hidden by default.
 
 
 -- * Put the current date as the default in the date picker when adding
@@ -95,6 +97,8 @@ mapHotkeys alt keyCodes =
       Just ToggleDone
     else if is 71 then -- Key G
       Just ToggleDoneVisibility
+    else if is 65 then -- Key A
+      Just ToggleAddVisibility
     else
       Nothing
   else
