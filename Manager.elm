@@ -152,8 +152,14 @@ sortModel model =
 
 updModel : Model -> Model
 updModel model =
-  let newModel =
-    sortModel { model | selected = model.selected % (List.length model.items) }
+  let
+    visibleItems =
+      if model.doneVisible then
+        List.length model.items
+      else
+        List.length (getDone False model.items)
+    newModel =
+      sortModel { model | selected = model.selected % visibleItems }
   in { newModel | items = updSelection newModel.selected 0 newModel.items }
 
 update : Action -> Model -> Model
