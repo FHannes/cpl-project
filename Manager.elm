@@ -42,7 +42,7 @@ init =
   , selected = 0
   , reminder = { date = "2015-01-01", body = "" }
   , reversed = False
-  , doneVisible = False
+  , doneVisible = True
   }
 
 addMails : List Email -> Model -> Model
@@ -291,6 +291,61 @@ viewAddReminder address model =
       ]
     ]
 
+viewHotkeys : Html
+viewHotkeys =
+  Html.div [ A.class "panel panel-default" ]
+    [ Html.div [ A.class "panel-heading" ]
+      [ Html.h4 []
+        [ Html.span [ A.class "glyphicon glyphicon-question-sign" ] []
+        , Html.text "\160Hotkeys"
+        ]
+      ]
+    , Html.div [ A.class "panel-body" ]
+      [ Html.p []
+        [ Html.span [ A.class "label label-default" ] [ Html.text "Alt" ]
+        , Html.text "\160+\160"
+        , Html.span [ A.class "label label-default" ] [ Html.text "J" ]
+        , Html.text ": Select the next item."
+        ]
+      , Html.p []
+        [ Html.span [ A.class "label label-default" ] [ Html.text "Alt" ]
+        , Html.text "\160+\160"
+        , Html.span [ A.class "label label-default" ] [ Html.text "K" ]
+        , Html.text ": Select the previous item."
+        ]
+      , Html.p []
+        [ Html.span [ A.class "label label-default" ] [ Html.text "Alt" ]
+        , Html.text "\160+\160"
+        , Html.span [ A.class "label label-default" ] [ Html.text "O" ]
+        , Html.text ": Toggle truncation of the selected item."
+        ]
+      , Html.p []
+        [ Html.span [ A.class "label label-default" ] [ Html.text "Alt" ]
+        , Html.text "\160+\160"
+        , Html.span [ A.class "label label-default" ] [ Html.text "P" ]
+        , Html.text ": Toggle the \"Done\" status of the selected item."
+        ]
+      , Html.p []
+        [ Html.span [ A.class "label label-default" ] [ Html.text "Alt" ]
+        , Html.text "\160+\160"
+        , Html.span [ A.class "label label-default" ] [ Html.text "X" ]
+        , Html.text ": Toggle the \"Pinned\" status of the selected item."
+        ]
+      , Html.p []
+        [ Html.span [ A.class "label label-default" ] [ Html.text "Alt" ]
+        , Html.text "\160+\160"
+        , Html.span [ A.class "label label-default" ] [ Html.text "S" ]
+        , Html.text ": Hold to sort all items in reverse, ignoring the pinned status."
+        ]
+      , Html.p []
+        [ Html.span [ A.class "label label-default" ] [ Html.text "Alt" ]
+        , Html.text "\160+\160"
+        , Html.span [ A.class "label label-default" ] [ Html.text "G" ]
+        , Html.text ": Toggle the visibility of completed items."
+        ]
+      ]
+    ]
+
 viewItems : Signal.Address Action -> Model -> Html
 viewItems address model =
   let
@@ -317,6 +372,8 @@ view address model =
       [ A.class "container"
       , A.style [ ("padding-top", "20px") ]
       ]
-      [ Html.div [ A.class "col-md-8" ] [ viewItems address model ]
-      , Html.div [ A.class "col-md-4" ] [ viewAddReminder address model ]
+      [ Html.div [ A.class "col-md-8" ]
+        [ viewItems address model ]
+      , Html.div [ A.class "col-md-4" ]
+        [ viewAddReminder address model, viewHotkeys ]
       ]

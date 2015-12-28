@@ -20,10 +20,9 @@ import Static exposing ( Email )
 -- * Add a hotkey to toggle the visibility of 'done' items.
 -- Status: Completed
 -- Summary:
---   The hotkey Alt+G was added to toggle the visibility of done items. By
---   default these are now toggled off. The "To do" and "Done" section headers
---   are only visible when done items are toggled on and at least one item is
---   done.
+--   The hotkey Alt+G was added to toggle the visibility of done items. The
+--   "To do" and "Done" section headers are only visible when done items are
+--   toggled on and at least one item is done.
 
 
 -- * Hide the 'add reminder' functionality and add a hotkey to toggle its
