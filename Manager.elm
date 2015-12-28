@@ -29,6 +29,9 @@ type Action
   | EditReminderBody String
   | MoveSel Bool
   | Reverse Bool
+  | ToggleTrunc
+  | TogglePinned
+  | ToggleDone
 
 init : Model
 init =
@@ -116,6 +119,10 @@ getDone done list =
         else
           (id, im) :: (getDone done (List.drop 1 list))
 
+getSelected : Model -> Maybe (ID, ItemModel)
+getSelected model =
+  List.head <| List.drop model.selected model.items
+
 -- UPDATE
 
 updSelection : Int -> Int -> List (ID, ItemModel) -> List (ID, ItemModel)
@@ -184,6 +191,26 @@ update action model =
         updModel { model | selected = model.selected - 1 }
     Reverse rev ->
       updModel { model | reversed = rev }
+    ToggleTrunc ->
+      case getSelected model of
+        Nothing -> model
+        Just (id, im) -> update (MailAction id MailItem.Expand) model
+    TogglePinned ->
+      case getSelected model of
+        Nothing -> model
+        Just (id, im) ->
+          let action = ListItem.Pin
+          in case im of
+            Mail mm -> update (MailAction id (MailItem.LIAction action)) model
+            Todo mm -> update (TodoAction id (TodoItem.LIAction action)) model
+    ToggleDone ->
+      case getSelected model of
+        Nothing -> model
+        Just (id, im) ->
+          let action = ListItem.MarkDone
+          in case im of
+            Mail mm -> update (MailAction id (MailItem.LIAction action)) model
+            Todo mm -> update (TodoAction id (TodoItem.LIAction action)) model
 
 -- VIEW
 

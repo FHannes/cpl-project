@@ -80,10 +80,16 @@ mapHotkeys : Bool -> Set KeyCode -> (Maybe Manager.Action)
 mapHotkeys alt keyCodes =
   let is keyCode = Set.member keyCode keyCodes
   in if alt then
-    if is 74 then
+    if is 74 then -- Key J
       Just <| MoveSel True
-    else if is 75 then
+    else if is 75 then -- Key K
       Just <| MoveSel False
+    else if is 79 then -- Key O
+      Just ToggleTrunc
+    else if is 80 then -- Key P
+      Just TogglePinned
+    else if is 88 then -- Key X
+      Just ToggleDone
     else
       Nothing
   else
@@ -92,7 +98,7 @@ mapHotkeys alt keyCodes =
 mapReverseHotkey : Bool -> Set KeyCode -> (Maybe Manager.Action)
 mapReverseHotkey alt keyCodes =
   let is keyCode = Set.member keyCode keyCodes
-  in Just <| Reverse <| alt && (is 83)
+  in Just <| Reverse <| alt && (is 83) -- Key S
 
 hotkeys : Signal (Maybe Manager.Action)
 hotkeys =
