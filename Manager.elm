@@ -287,12 +287,13 @@ view address model =
       , A.style [ ("padding-top", "20px") ]
       ]
       [ Html.div [ A.class "col-md-8" ]
-        (List.map (viewItem address) (getDone True model.items) ++
-        (if not (List.isEmpty doneItems) then
-          ([ Html.h1 [] [ Html.text <| "Done" ] ] ++
-            List.map (viewItem address) doneItems)
-        else
-          [])
-        )
+        ([ Html.h1 [] [ Html.text <| "To do" ] ] ++
+          List.map (viewItem address) (getDone True model.items) ++
+          (if not (List.isEmpty doneItems) then
+            ([ Html.h1 [] [ Html.text <| "Done" ] ] ++
+              List.map (viewItem address) doneItems)
+          else
+            [])
+          )
       , Html.div [ A.class "col-md-4" ] [ viewAddReminder address model ]
       ]
