@@ -135,12 +135,13 @@ updSelection sel idx list =
     Just (id, im) ->
       let
         next = updSelection sel (idx + 1) (List.drop 1 list)
+        action = ListItem.SetSelected (sel == idx)
       in
         case im of
           Mail mm ->
-            (id, Mail (MailItem.updSelection (sel == idx) mm)) :: next
+            (id, Mail <| MailItem.update (MailItem.LIAction action) mm) :: next
           Todo mm ->
-            (id, Todo (TodoItem.updSelection (sel == idx) mm)) :: next
+            (id, Todo <| TodoItem.update (TodoItem.LIAction action) mm) :: next
 
 sortModel : Model -> Model
 sortModel model =

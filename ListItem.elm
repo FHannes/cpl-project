@@ -6,22 +6,19 @@ import Html.Events as E
 import Html.Attributes as A
 
 type alias Model = { date: Date, pinned: Bool, done: Bool, selected: Bool }
-type Action = Pin | MarkDone
+type Action = Pin | MarkDone | SetSelected Bool
 
 init : Date -> Model
 init iDate = { date = iDate, pinned = False, done = False, selected = False }
 
 -- UPDATE
 
-updSelection : Bool -> Model -> Model
-updSelection sel model =
-  { model | selected = sel }
-
 update : Action -> Model -> Model
 update action model =
   case action of
     Pin -> { model | pinned = not model.pinned }
     MarkDone -> { model | done = not model.done }
+    SetSelected sel -> { model | selected = sel }
 
 -- VIEW
 

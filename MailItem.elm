@@ -19,10 +19,6 @@ init mail =
 
 -- UPDATE
 
-updSelection : Bool -> Model -> Model
-updSelection sel model =
-  {model | item = ListItem.updSelection sel model.item }
-
 update : Action -> Model -> Model
 update action model =
   case action of
