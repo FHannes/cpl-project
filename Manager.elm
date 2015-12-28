@@ -6,6 +6,7 @@ import Html.Events as E
 import Html.Attributes as A
 import Json.Decode as Json
 
+import ListItem
 import MailItem
 import Static exposing ( Email, Reminder )
 import TodoItem
@@ -15,7 +16,7 @@ type ItemModel = Mail MailItem.Model | Todo TodoItem.Model
 type alias Model =
   { items: List (ID, ItemModel)
   , curId: ID
-  , selected: ID
+  , selected: Int
   , reminder: { date: String, body: String }
   }
 
@@ -87,6 +88,32 @@ getDone done list =
 
 -- UPDATE
 
+updSelection : Int -> Int -> List (ID, ItemModel) -> List (ID, ItemModel)
+updSelection sel idx list =
+  case List.head list of
+    Nothing -> []
+    Just (id, im) ->
+      let
+        next = updSelection sel (idx + 1) (List.drop 1 list)
+      in
+        case im of
+          Mail mm ->
+            (id, Mail (MailItem.updSelection (sel == idx) mm)) :: next
+          Todo mm ->
+            (id, Todo (TodoItem.updSelection (sel == idx) mm)) :: next
+
+upSel : List (ID, ItemModel) -> List (ID, ItemModel)
+upSel list = list
+
+updModel : Model -> Model
+updModel model =
+  let newModel =
+    { model
+      | items = List.sortWith sortModel model.items
+      , selected = model.selected % (List.length model.items)
+    }
+  in { newModel | items = updSelection newModel.selected 0 newModel.items }
+
 update : Action -> Model -> Model
 update action model =
   case action of
@@ -97,7 +124,7 @@ update action model =
         else case model of
           Todo tModel -> (iid, model)
           Mail mModel -> (iid, Mail (MailItem.update miAction mModel))
-      in { model | items = List.map updateMI model.items }
+      in updModel { model | items = List.map updateMI model.items }
     TodoAction id tiAction ->
       let updateTI (iid, model) =
         if id /= iid then
@@ -105,28 +132,28 @@ update action model =
         else case model of
           Mail mModel -> (iid, model)
           Todo tModel -> (iid, Todo (TodoItem.update tiAction tModel))
-      in { model | items = List.map updateTI model.items }
+      in updModel { model | items = List.map updateTI model.items }
     AddReminder ->
       let todo =
         { created = model.reminder.date
         , body = model.reminder.body
         }
       in let newModel = addTodos [todo] model
-      in { newModel | reminder = { date = "2015-01-01", body = "" } }
+      in updModel { newModel | reminder = { date = "2015-01-01", body = "" } }
     EditReminderDate value ->
       let rm = model.reminder
-      in { model | reminder = { rm | date = value } }
+      in updModel { model | reminder = { rm | date = value } }
     EditReminderBody value ->
       let rm = model.reminder
-      in { model | reminder = { rm | body = value } }
+      in updModel { model | reminder = { rm | body = value } }
 
 -- VIEW
 
-viewItem : Signal.Address Action -> ID -> (ID, ItemModel) -> Html
-viewItem address selected (id, model) =
+viewItem : Signal.Address Action -> (ID, ItemModel) -> Html
+viewItem address (id, model) =
   case model of
-    Mail mail -> MailItem.view (Signal.forwardTo address (MailAction id)) (id == selected) mail
-    Todo reminder -> TodoItem.view (Signal.forwardTo address (TodoAction id)) (id == selected) reminder
+    Mail mail -> MailItem.view (Signal.forwardTo address (MailAction id)) mail
+    Todo reminder -> TodoItem.view (Signal.forwardTo address (TodoAction id)) reminder
 
 onAddReminder : Signal.Address Action -> Action -> Attribute
 onAddReminder address value =
@@ -137,6 +164,53 @@ onAddReminder address value =
       { options | preventDefault = True }
       Json.value
       (\_ -> Signal.message address value)
+
+viewAddReminder : Signal.Address Action -> Model -> Html
+viewAddReminder address model =
+  Html.div [ A.class "panel panel-default" ]
+    [ Html.div [ A.class "panel-heading" ]
+      [ Html.h4 []
+        [ Html.span [ A.class "glyphicon glyphicon-plus" ] []
+        , Html.text "\160Add Reminder"
+        ]
+      ]
+    , Html.div [ A.class "panel-body" ]
+      [ Html.form [ onAddReminder address AddReminder ]
+        [ Html.div [ A.class "form-group" ]
+          [ Html.label [ A.attribute "for" "add-reminder-date" ]
+            [ Html.text "Date" ]
+          , Html.input
+            [ A.attribute "type" "date"
+            , A.class "form-control"
+            , A.id "add-reminder-date"
+            , A.name "add-reminder-date"
+            , A.value model.reminder.date
+            , A.placeholder "Date"
+            , E.on "input" E.targetValue (Signal.message address << EditReminderDate)
+            ] []
+          ]
+        , Html.div [ A.class "form-group" ]
+          [ Html.label [ A.attribute "for" "add-reminder-body" ]
+            [ Html.text "Message" ]
+          , Html.textarea
+            [ A.attribute "type" "text"
+            , A.class "form-control"
+            , A.id "add-reminder-body"
+            , A.name "add-reminder-body"
+            , A.value model.reminder.body
+            , A.placeholder "Message"
+            , A.style [ ("resize", "vertical") ]
+            , E.on "input" E.targetValue (Signal.message address << EditReminderBody)
+            ] []
+          ]
+        , Html.button
+          [ A.attribute "type" "submit"
+          , A.class "btn btn-default pull-right"
+          ]
+          [ Html.text "Add" ]
+        ]
+      ]
+    ]
 
 view : Signal.Address Action -> Model -> Html
 view address model =
@@ -149,57 +223,12 @@ view address model =
       , A.style [ ("padding-top", "20px") ]
       ]
       [ Html.div [ A.class "col-md-8" ]
-        (List.map (viewItem address model.selected) (getDone True sortedModel.items) ++
+        (List.map (viewItem address) (getDone True sortedModel.items) ++
         (if not (List.isEmpty doneItems) then
           ([ Html.h1 [] [ Html.text "Done" ] ] ++
-            List.map (viewItem address model.selected) doneItems)
+            List.map (viewItem address) doneItems)
         else
           [])
         )
-      , Html.div [ A.class "col-md-4" ]
-        [ Html.div [ A.class "panel panel-default" ]
-          [ Html.div [ A.class "panel-heading" ]
-            [ Html.h4 []
-              [ Html.span [ A.class "glyphicon glyphicon-plus" ] []
-              , Html.text "\160Add Reminder"
-              ]
-            ]
-          , Html.div [ A.class "panel-body" ]
-            [ Html.form [ onAddReminder address AddReminder ]
-              [ Html.div [ A.class "form-group" ]
-                [ Html.label [ A.attribute "for" "add-reminder-date" ]
-                  [ Html.text "Date" ]
-                , Html.input
-                  [ A.attribute "type" "date"
-                  , A.class "form-control"
-                  , A.id "add-reminder-date"
-                  , A.name "add-reminder-date"
-                  , A.value model.reminder.date
-                  , A.placeholder "Date"
-                  , E.on "input" E.targetValue (Signal.message address << EditReminderDate)
-                  ] []
-                ]
-              , Html.div [ A.class "form-group" ]
-                [ Html.label [ A.attribute "for" "add-reminder-body" ]
-                  [ Html.text "Message" ]
-                , Html.textarea
-                  [ A.attribute "type" "text"
-                  , A.class "form-control"
-                  , A.id "add-reminder-body"
-                  , A.name "add-reminder-body"
-                  , A.value model.reminder.body
-                  , A.placeholder "Message"
-                  , A.style [ ("resize", "vertical") ]
-                  , E.on "input" E.targetValue (Signal.message address << EditReminderBody)
-                  ] []
-                ]
-              , Html.button
-                [ A.attribute "type" "submit"
-                , A.class "btn btn-default pull-right"
-                ]
-                [ Html.text "Add" ]
-              ]
-            ]
-          ]
-        ]
+      , Html.div [ A.class "col-md-4" ] [ viewAddReminder address model ]
       ]

@@ -68,7 +68,8 @@ import Static exposing ( Email )
 
 data : Manager.Model
 data =
-  Manager.addTodos Static.reminders (Manager.addMails Static.emails Manager.init)
+  let mails = Manager.addMails Static.emails Manager.init
+  in Manager.updModel <| Manager.addTodos Static.reminders mails
 
 mailbox : Signal.Mailbox (Maybe Manager.Action)
 mailbox = Signal.mailbox Nothing

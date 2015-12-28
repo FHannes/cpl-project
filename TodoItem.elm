@@ -18,6 +18,10 @@ init reminder =
 
 -- UPDATE
 
+updSelection : Bool -> Model -> Model
+updSelection sel model =
+  {model | item = ListItem.updSelection sel model.item }
+
 update : Action -> Model -> Model
 update action model =
   case action of
@@ -25,12 +29,11 @@ update action model =
 
 -- VIEW
 
-view : Signal.Address Action -> Bool -> Model -> Html
-view address selected model =
+view : Signal.Address Action -> Model -> Html
+view address model =
   let reminder = model.data
   in ListItem.view
     (Signal.forwardTo address LIAction)
-    selected
     model.item
     [ Html.span [ A.class "glyphicon glyphicon-time" ] []
     , Html.text <| "\160" ++ reminder.created
