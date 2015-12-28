@@ -158,8 +158,10 @@ updModel model =
         List.length model.items
       else
         List.length (getDone False model.items)
+    newSelected =
+      if visibleItems == 0 then 0 else model.selected % visibleItems
     newModel =
-      sortModel { model | selected = model.selected % visibleItems }
+      sortModel { model | selected = newSelected }
   in { newModel | items = updSelection newModel.selected 0 newModel.items }
 
 update : Action -> Model -> Model
@@ -299,11 +301,11 @@ viewItems address model =
       (
         if (not model.doneVisible) || (List.isEmpty completeItems) then
           incompleteItems
+        else if model.doneVisible && (List.isEmpty incompleteItems) then
+          [ Html.h1 [] [ Html.text <| "Done" ] ] ++ completeItems
         else
-          [ Html.h1 [] [ Html.text <| "To do" ] ] ++
-            incompleteItems ++
-            [ Html.h1 [] [ Html.text <| "Done" ] ] ++
-            completeItems
+          [ Html.h1 [] [ Html.text <| "To do" ] ] ++ incompleteItems ++
+            [ Html.h1 [] [ Html.text <| "Done" ] ] ++ completeItems
       )
 
 view : Signal.Address Action -> Model -> Html
