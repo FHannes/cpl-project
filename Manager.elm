@@ -19,6 +19,7 @@ type alias Model =
   , selected: Int
   , reminder: { date: String, body: String }
   , reversed: Bool
+  , doneVisible: Bool
   }
 
 type Action
@@ -32,6 +33,7 @@ type Action
   | ToggleTrunc
   | TogglePinned
   | ToggleDone
+  | ToggleDoneVisibility
 
 init : Model
 init =
@@ -40,6 +42,7 @@ init =
   , selected = 0
   , reminder = { date = "2015-01-01", body = "" }
   , reversed = False
+  , doneVisible = False
   }
 
 addMails : List Email -> Model -> Model
@@ -114,7 +117,7 @@ getDone done list =
           Mail mm -> mm.item
           Todo mm -> mm.item
       ) in
-        if li.done == done then
+        if li.done /= done then
           getDone done (List.drop 1 list)
         else
           (id, im) :: (getDone done (List.drop 1 list))
@@ -211,6 +214,8 @@ update action model =
           in case im of
             Mail mm -> update (MailAction id (MailItem.LIAction action)) model
             Todo mm -> update (TodoAction id (TodoItem.LIAction action)) model
+    ToggleDoneVisibility ->
+      updModel { model | doneVisible = not model.doneVisible }
 
 -- VIEW
 
@@ -277,6 +282,23 @@ viewAddReminder address model =
       ]
     ]
 
+viewItems : Signal.Address Action -> Model -> Html
+viewItems address model =
+  let
+    completeItems = List.map (viewItem address) (getDone True model.items)
+    incompleteItems = List.map (viewItem address) (getDone False model.items)
+  in
+    Html.div []
+      (
+        if (not model.doneVisible) || (List.isEmpty completeItems) then
+          incompleteItems
+        else
+          [ Html.h1 [] [ Html.text <| "To do" ] ] ++
+            incompleteItems ++
+            [ Html.h1 [] [ Html.text <| "Done" ] ] ++
+            completeItems
+      )
+
 view : Signal.Address Action -> Model -> Html
 view address model =
   let
@@ -286,14 +308,6 @@ view address model =
       [ A.class "container"
       , A.style [ ("padding-top", "20px") ]
       ]
-      [ Html.div [ A.class "col-md-8" ]
-        ([ Html.h1 [] [ Html.text <| "To do" ] ] ++
-          List.map (viewItem address) (getDone True model.items) ++
-          (if not (List.isEmpty doneItems) then
-            ([ Html.h1 [] [ Html.text <| "Done" ] ] ++
-              List.map (viewItem address) doneItems)
-          else
-            [])
-          )
+      [ Html.div [ A.class "col-md-8" ] [ viewItems address model ]
       , Html.div [ A.class "col-md-4" ] [ viewAddReminder address model ]
       ]
