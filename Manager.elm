@@ -14,11 +14,12 @@ import TodoItem
 
 type alias ID = Int
 type ItemModel = Mail MailItem.Model | Todo TodoItem.Model
+type alias ReminderField = { date: String, dlDate: String, body: String }
 type alias Model =
   { items: List (ID, ItemModel)
   , curId: ID
   , selected: Int
-  , reminder: { date: String, body: String }
+  , reminder: ReminderField
   , reversed: Bool
   , doneVisible: Bool
   , addVisible: Bool
@@ -29,6 +30,7 @@ type Action
   | TodoAction ID TodoItem.Action
   | AddReminder
   | EditReminderDate String
+  | EditDeadlineDate String
   | EditReminderBody String
   | MoveSel Bool
   | Reverse Bool
@@ -38,12 +40,19 @@ type Action
   | ToggleDoneVisibility
   | ToggleAddVisibility
 
+initRMField : ReminderField
+initRMField =
+  { date = DateUtils.dateToString DateUtils.getDate
+  , dlDate = DateUtils.dateToString DateUtils.getDate
+  , body = ""
+  }
+
 init : Model
 init =
   { items = []
   , curId = 0
   , selected = 0
-  , reminder = { date = DateUtils.dateToString DateUtils.getDate, body = "" }
+  , reminder = initRMField
   , reversed = False
   , doneVisible = True
   , addVisible = False
@@ -190,13 +199,17 @@ update action model =
     AddReminder ->
       let todo =
         { created = model.reminder.date
+        , deadline = model.reminder.dlDate
         , body = model.reminder.body
         }
       in let newModel = addTodos [todo] model
-      in updModel { newModel | reminder = { date = "2015-01-01", body = "" } }
+      in updModel { newModel | reminder = initRMField }
     EditReminderDate value ->
       let rm = model.reminder
-      in updModel { model | reminder = { rm | date = value } }
+      in updModel { model | reminder = { rm | date = value, dlDate = value } }
+    EditDeadlineDate value ->
+      let rm = model.reminder
+      in updModel { model | reminder = { rm | dlDate = value, date = value } }
     EditReminderBody value ->
       let rm = model.reminder
       in updModel { model | reminder = { rm | body = value } }
@@ -272,6 +285,19 @@ viewAddReminder address model =
             , A.value model.reminder.date
             , A.placeholder "Date"
             , E.on "input" E.targetValue (Signal.message address << EditReminderDate)
+            ] []
+          ]
+        , Html.div [ A.class "form-group" ]
+          [ Html.label [ A.attribute "for" "add-reminder-dldate" ]
+            [ Html.text "Deadline" ]
+          , Html.input
+            [ A.attribute "type" "date"
+            , A.class "form-control"
+            , A.id "add-reminder-dldate"
+            , A.name "add-reminder-dldate"
+            , A.value model.reminder.dlDate
+            , A.placeholder "Date"
+            , E.on "input" E.targetValue (Signal.message address << EditDeadlineDate)
             ] []
           ]
         , Html.div [ A.class "form-group" ]

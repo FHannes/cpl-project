@@ -45,8 +45,12 @@ import Static exposing ( Email )
 
 -- * Add a deadline property to reminders and mark all reminders that are past
 -- * their deadline.
--- Status: Completed / Attempted / Unattempted
+-- Status: Completed
 -- Summary:
+--   A deadline property was added to Static.Reminder. A date field for the
+--   deadline was also added to the panel which can be used to add new
+--   reminders. Reminder items for which the deadline lies before the current
+--   date are marked as EXPIRED in the interface.
 
 
 -- * Add a 'snooze' feature to items, to 'snooze' an item you must provide a

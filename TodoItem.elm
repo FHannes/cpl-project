@@ -5,6 +5,7 @@ import Html exposing ( Html )
 import Html.Events as E
 import Html.Attributes as A
 
+import DateUtils
 import ListItem
 import Static exposing ( Reminder )
 
@@ -27,12 +28,29 @@ update action model =
 
 view : Signal.Address Action -> Model -> Html
 view address model =
-  let reminder = model.data
-  in ListItem.view
-    (Signal.forwardTo address LIAction)
-    model.item
-    [ Html.span [ A.class "glyphicon glyphicon-time" ] []
-    , Html.text <| "\160" ++ reminder.created
-    ]
-    []
-    [ Html.text reminder.body ]
+  let
+    reminder = model.data
+    expired =
+      let
+        resDLDate = Date.fromString reminder.deadline
+      in
+        case resDLDate of
+          Err e -> False
+          Ok cDLDate -> DateUtils.now > (Date.toTime cDLDate)
+  in
+    ListItem.view
+      (Signal.forwardTo address LIAction)
+      model.item
+      ([ Html.span [ A.class "glyphicon glyphicon-time" ] []
+      , Html.text <| "\160" ++ reminder.created
+      ] ++ (
+        if expired then
+          [ Html.text <| "\160"
+          , Html.span [ A.class "label label-danger" ]
+            [ Html.text "EXPIRED" ]
+          ]
+        else
+          []
+      ))
+      [ Html.text <| "Deadline: " ++ reminder.deadline ]
+      [ Html.text reminder.body ]
