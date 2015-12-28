@@ -35,8 +35,12 @@ import Static exposing ( Email )
 
 -- * Put the current date as the default in the date picker when adding
 -- * reminders.
--- Status: Completed / Attempted / Unattempted
+-- Status: Completed
 -- Summary:
+--   A native module DateUtils.js was added to provide a function which gets
+--   the current timestamp in JavaScript. This was wrapped by the Elm module
+--   DateUtils. The formatting of the timestamp is provided by the library
+--   "mgold/elm-date-format".
 
 
 -- * Add a deadline property to reminders and mark all reminders that are past

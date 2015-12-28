@@ -6,6 +6,7 @@ import Html.Events as E
 import Html.Attributes as A
 import Json.Decode as Json
 
+import DateUtils
 import ListItem
 import MailItem
 import Static exposing ( Email, Reminder )
@@ -42,7 +43,7 @@ init =
   { items = []
   , curId = 0
   , selected = 0
-  , reminder = { date = "2015-01-01", body = "" }
+  , reminder = { date = DateUtils.dateToString DateUtils.getDate, body = "" }
   , reversed = False
   , doneVisible = True
   , addVisible = False
