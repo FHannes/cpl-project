@@ -73,7 +73,11 @@ modelOrder (id1, im1) (id2, im2) =
       if li1.done == True then GT else LT
     else if li1.pinned /= li2.pinned then
       if li1.pinned == True then LT else GT
-    else if (Date.toTime li1.date) < (Date.toTime li2.date) then LT else GT
+    else
+      let
+        t1 = Date.toTime li1.date
+        t2 = Date.toTime li2.date
+      in if t1 == t2 then EQ else if t1 < t2 then LT else GT
 
 modelOrderReversed : (ID,  ItemModel) -> (ID, ItemModel) -> Order
 modelOrderReversed (id1, im1) (id2, im2) =
@@ -91,7 +95,11 @@ modelOrderReversed (id1, im1) (id2, im2) =
   in
     if li1.done /= li2.done then
       if li1.done == True then GT else LT
-    else if (Date.toTime li1.date) < (Date.toTime li2.date) then GT else LT
+    else
+      let
+        t1 = Date.toTime li1.date
+        t2 = Date.toTime li2.date
+      in if t1 == t2 then EQ else if t1 > t2 then LT else GT
 
 getDone : Bool -> List (ID, ItemModel) -> List (ID, ItemModel)
 getDone done list =
