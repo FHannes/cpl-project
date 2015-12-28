@@ -18,6 +18,7 @@ type alias Model =
   , curId: ID
   , selected: Int
   , reminder: { date: String, body: String }
+  , reversed: Bool
   }
 
 type Action
@@ -26,6 +27,8 @@ type Action
   | AddReminder
   | EditReminderDate String
   | EditReminderBody String
+  | MoveSel Bool
+  | Reverse Bool
 
 init : Model
 init =
@@ -33,6 +36,7 @@ init =
   , curId = 0
   , selected = 0
   , reminder = { date = "2015-01-01", body = "" }
+  , reversed = False
   }
 
 addMails : List Email -> Model -> Model
@@ -51,8 +55,8 @@ addTodos reminders model =
       let newModel = addTodos (List.drop 1 reminders) { model | curId = model.curId + 1 }
       in { newModel | items = ( model.curId, Todo <| TodoItem.init reminder) :: newModel.items }
 
-sortModel : (ID,  ItemModel) -> (ID, ItemModel) -> Order
-sortModel (id1, im1) (id2, im2) =
+modelOrder : (ID,  ItemModel) -> (ID, ItemModel) -> Order
+modelOrder (id1, im1) (id2, im2) =
   let
     li1 = (
       case im1 of
@@ -70,6 +74,24 @@ sortModel (id1, im1) (id2, im2) =
     else if li1.pinned /= li2.pinned then
       if li1.pinned == True then LT else GT
     else if (Date.toTime li1.date) < (Date.toTime li2.date) then LT else GT
+
+modelOrderReversed : (ID,  ItemModel) -> (ID, ItemModel) -> Order
+modelOrderReversed (id1, im1) (id2, im2) =
+  let
+    li1 = (
+      case im1 of
+        Mail mm -> mm.item
+        Todo mm -> mm.item
+    )
+    li2 = (
+      case im2 of
+        Mail mm -> mm.item
+        Todo mm -> mm.item
+    )
+  in
+    if li1.done /= li2.done then
+      if li1.done == True then GT else LT
+    else if (Date.toTime li1.date) < (Date.toTime li2.date) then GT else LT
 
 getDone : Bool -> List (ID, ItemModel) -> List (ID, ItemModel)
 getDone done list =
@@ -102,16 +124,17 @@ updSelection sel idx list =
           Todo mm ->
             (id, Todo (TodoItem.updSelection (sel == idx) mm)) :: next
 
-upSel : List (ID, ItemModel) -> List (ID, ItemModel)
-upSel list = list
+sortModel : Model -> Model
+sortModel model =
+  if model.reversed then
+    { model | items = List.sortWith modelOrderReversed model.items }
+  else
+    { model | items = List.sortWith modelOrder model.items }
 
 updModel : Model -> Model
 updModel model =
   let newModel =
-    { model
-      | items = List.sortWith sortModel model.items
-      , selected = model.selected % (List.length model.items)
-    }
+    sortModel { model | selected = model.selected % (List.length model.items) }
   in { newModel | items = updSelection newModel.selected 0 newModel.items }
 
 update : Action -> Model -> Model
@@ -146,6 +169,13 @@ update action model =
     EditReminderBody value ->
       let rm = model.reminder
       in updModel { model | reminder = { rm | body = value } }
+    MoveSel next ->
+      if next then
+        updModel { model | selected = model.selected + 1 }
+      else
+        updModel { model | selected = model.selected - 1 }
+    Reverse rev ->
+      updModel { model | reversed = rev }
 
 -- VIEW
 
@@ -215,17 +245,16 @@ viewAddReminder address model =
 view : Signal.Address Action -> Model -> Html
 view address model =
   let
-    sortedModel = { model | items = List.sortWith sortModel model.items }
-    doneItems = getDone False sortedModel.items
+    doneItems = getDone False model.items
   in
     Html.div
       [ A.class "container"
       , A.style [ ("padding-top", "20px") ]
       ]
       [ Html.div [ A.class "col-md-8" ]
-        (List.map (viewItem address) (getDone True sortedModel.items) ++
+        (List.map (viewItem address) (getDone True model.items) ++
         (if not (List.isEmpty doneItems) then
-          ([ Html.h1 [] [ Html.text "Done" ] ] ++
+          ([ Html.h1 [] [ Html.text <| "Done" ] ] ++
             List.map (viewItem address) doneItems)
         else
           [])

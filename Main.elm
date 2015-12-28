@@ -1,11 +1,16 @@
 module Main where
 
+import Char exposing ( KeyCode )
 import Html exposing ( Html )
 import Html.Events as E
 import Html.Attributes as A
+import Keyboard
+import Maybe
+import Set exposing ( Set )
 import Signal
+import Time
 
-import Manager
+import Manager exposing ( Action (..) )
 import Static exposing ( Email )
 
 -- Name: Frédéric Hannes
@@ -71,6 +76,32 @@ data =
   let mails = Manager.addMails Static.emails Manager.init
   in Manager.updModel <| Manager.addTodos Static.reminders mails
 
+mapHotkeys : Bool -> Set KeyCode -> (Maybe Manager.Action)
+mapHotkeys alt keyCodes =
+  let is keyCode = Set.member keyCode keyCodes
+  in if alt then
+    if is 74 then
+      Just <| MoveSel True
+    else if is 75 then
+      Just <| MoveSel False
+    else
+      Nothing
+  else
+    Nothing
+
+mapReverseHotkey : Bool -> Set KeyCode -> (Maybe Manager.Action)
+mapReverseHotkey alt keyCodes =
+  let is keyCode = Set.member keyCode keyCodes
+  in Just <| Reverse <| alt && (is 83)
+
+hotkeys : Signal (Maybe Manager.Action)
+hotkeys =
+  Signal.mergeMany
+    [ Signal.map2 mapHotkeys Keyboard.alt Keyboard.keysDown
+    , Signal.sampleOn (Time.fps 10)
+      (Signal.map2 mapReverseHotkey Keyboard.alt Keyboard.keysDown)
+    ]
+
 mailbox : Signal.Mailbox (Maybe Manager.Action)
 mailbox = Signal.mailbox Nothing
 
@@ -80,7 +111,7 @@ state =
     case action of
       Just a -> Manager.update a model
       _ -> model
-  in Signal.foldp update data mailbox.signal
+  in Signal.foldp update data (Signal.merge mailbox.signal hotkeys)
 
 main : Signal Html
 main =
