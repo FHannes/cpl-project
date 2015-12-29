@@ -4,12 +4,15 @@ import Char exposing ( KeyCode )
 import Html exposing ( Html )
 import Html.Events as E
 import Html.Attributes as A
+import Http
 import Keyboard
 import Maybe
 import Set exposing ( Set )
 import Signal
 import Time
+import Task exposing ( Task )
 
+import MailFetcher exposing ( ServerMails )
 import Manager exposing ( Action (..) )
 import Static exposing ( Email )
 
@@ -141,6 +144,10 @@ state =
       Just a -> Manager.update a model
       _ -> model
   in Signal.foldp update data (Signal.merge mailbox.signal hotkeys)
+
+port runner : Task Http.Error ()
+port runner =
+  MailFetcher.fetch `Task.andThen` (AddMails >> Just >> Signal.send mailbox.address)
 
 main : Signal Html
 main =

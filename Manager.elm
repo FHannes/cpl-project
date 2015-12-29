@@ -9,6 +9,7 @@ import Json.Decode as Json
 import DateUtils
 import ListItem
 import MailItem
+import MailFetcher exposing ( ServerMails )
 import Static exposing ( Email, Reminder )
 import TodoItem
 
@@ -44,6 +45,7 @@ type Action
   | EditSnoozeDate String
   | Snooze
   | ToggleSnoozerVisibility
+  | AddMails ServerMails
 
 initRMField : ReminderField
 initRMField =
@@ -264,7 +266,9 @@ update action model =
             Mail mm -> update (MailAction id (MailItem.LIAction action)) newModel
             Todo mm -> update (TodoAction id (TodoItem.LIAction action)) newModel
     ToggleSnoozerVisibility ->
-      { model | snoozeVisible = not model.snoozeVisible}
+      { model | snoozeVisible = not model.snoozeVisible }
+    AddMails serverMails ->
+      updModel <| addMails serverMails.mails model
 
 -- VIEW
 
