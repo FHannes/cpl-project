@@ -14,7 +14,7 @@ type alias Model =
   , selected: Bool
   , snoozed: (Maybe Date)
   }
-type Action = Pin | MarkDone | SetSelected Bool | Snooze Date | CheckSnooze
+type Action = Pin | MarkDone | SetSelected Bool | Snooze Date
 
 init : Date -> Model
 init iDate =
@@ -25,6 +25,12 @@ init iDate =
   , snoozed = Nothing
   }
 
+isSnoozed : Model -> Bool
+isSnoozed model =
+  case model.snoozed of
+    Nothing -> False
+    Just date -> (Date.toTime date) > DateUtils.now
+
 -- UPDATE
 
 update : Action -> Model -> Model
@@ -34,14 +40,6 @@ update action model =
     MarkDone -> { model | done = not model.done }
     SetSelected sel -> { model | selected = sel }
     Snooze date -> { model | snoozed = Just date }
-    CheckSnooze ->
-      case model.snoozed of
-        Nothing -> model
-        Just date ->
-          if DateUtils.now > (Date.toTime date) then
-            { model | snoozed = Nothing }
-          else
-            model
 
 -- VIEW
 

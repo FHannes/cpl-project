@@ -55,8 +55,12 @@ import Static exposing ( Email )
 
 -- * Add a 'snooze' feature to items, to 'snooze' an item you must provide a
 -- * date on which the item has to 'un-snooze'. 'snoozed' items are not visible.
--- Status: Completed / Attempted / Unattempted
+-- Status: Completed
 -- Summary:
+--   A new panel was added which is hidden by default and can be toggled with
+--   the hotkey Alt+H. This panel allows you to snooze the currently selected
+--   item by providing a snooze date. The system will hide any item which is
+--   currently snoozed.
 
 
 -- * On startup, read e-mails from a Json document at this url:

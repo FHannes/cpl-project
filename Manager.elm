@@ -85,19 +85,17 @@ addTodos reminders model =
       let newModel = addTodos (List.drop 1 reminders) { model | curId = model.curId + 1 }
       in { newModel | items = ( model.curId, Todo <| TodoItem.init reminder) :: newModel.items }
 
+getListItem : ItemModel -> ListItem.Model
+getListItem im =
+  case im of
+    Mail mm -> mm.item
+    Todo mm -> mm.item
+
 modelOrder : (ID,  ItemModel) -> (ID, ItemModel) -> Order
 modelOrder (id1, im1) (id2, im2) =
   let
-    li1 = (
-      case im1 of
-        Mail mm -> mm.item
-        Todo mm -> mm.item
-    )
-    li2 = (
-      case im2 of
-        Mail mm -> mm.item
-        Todo mm -> mm.item
-    )
+    li1 = getListItem im1
+    li2 = getListItem im2
   in
     if li1.done /= li2.done then
       if li1.done == True then GT else LT
@@ -112,16 +110,8 @@ modelOrder (id1, im1) (id2, im2) =
 modelOrderReversed : (ID,  ItemModel) -> (ID, ItemModel) -> Order
 modelOrderReversed (id1, im1) (id2, im2) =
   let
-    li1 = (
-      case im1 of
-        Mail mm -> mm.item
-        Todo mm -> mm.item
-    )
-    li2 = (
-      case im2 of
-        Mail mm -> mm.item
-        Todo mm -> mm.item
-    )
+    li1 = getListItem im1
+    li2 = getListItem im2
   in
     if li1.done /= li2.done then
       if li1.done == True then GT else LT
@@ -136,12 +126,10 @@ getDone done list =
   case List.head list of
     Nothing -> []
     Just (id, im) ->
-      let li = (
-        case im of
-          Mail mm -> mm.item
-          Todo mm -> mm.item
-      ) in
-        if li.done /= done then
+      let
+        li = getListItem im
+      in
+        if (ListItem.isSnoozed li) || (li.done /= done) then
           getDone done (List.drop 1 list)
         else
           (id, im) :: (getDone done (List.drop 1 list))
@@ -158,8 +146,14 @@ updSelection sel idx list =
     Nothing -> []
     Just (id, im) ->
       let
-        next = updSelection sel (idx + 1) (List.drop 1 list)
-        action = ListItem.SetSelected (sel == idx)
+        li = getListItem im
+        snoozed = ListItem.isSnoozed li
+        next =
+          if snoozed then
+            updSelection sel idx (List.drop 1 list)
+          else
+            updSelection sel (idx + 1) (List.drop 1 list)
+        action = ListItem.SetSelected <| (not snoozed) && (sel == idx)
       in
         case im of
           Mail mm ->
@@ -177,11 +171,13 @@ sortModel model =
 updModel : Model -> Model
 updModel model =
   let
+    completeItems = getDone True model.items
+    incompleteItems = getDone False model.items
     visibleItems =
       if model.doneVisible then
-        List.length model.items
+        List.length (completeItems ++ incompleteItems)
       else
-        List.length (getDone False model.items)
+        List.length incompleteItems
     newSelected =
       if visibleItems == 0 then 0 else model.selected % visibleItems
     newModel =
@@ -278,8 +274,8 @@ viewItem address (id, model) =
     Mail mail -> MailItem.view (Signal.forwardTo address (MailAction id)) mail
     Todo reminder -> TodoItem.view (Signal.forwardTo address (TodoAction id)) reminder
 
-onAddReminder : Signal.Address Action -> Action -> Attribute
-onAddReminder address value =
+onSubmit : Signal.Address Action -> Action -> Attribute
+onSubmit address value =
   let options = E.defaultOptions
   in
     E.onWithOptions
@@ -298,7 +294,7 @@ viewAddReminder address model =
         ]
       ]
     , Html.div [ A.class "panel-body" ]
-      [ Html.form [ onAddReminder address AddReminder ]
+      [ Html.form [ onSubmit address AddReminder ]
         [ Html.div [ A.class "form-group" ]
           [ Html.label [ A.attribute "for" "add-reminder-date" ]
             [ Html.text "Date" ]
@@ -358,17 +354,17 @@ viewSnoozer address model =
         ]
       ]
     , Html.div [ A.class "panel-body" ]
-      [ Html.form [ onAddReminder address Snooze ]
+      [ Html.form [ onSubmit address Snooze ]
         [ Html.div [ A.class "form-group" ]
           [ Html.label [ A.attribute "for" "snooze-date" ]
-            [ Html.text "Date" ]
+            [ Html.text "Unsnooze date" ]
           , Html.input
             [ A.attribute "type" "date"
             , A.class "form-control"
             , A.id "snooze-date"
             , A.name "snooze-date"
             , A.value model.snoozer
-            , A.placeholder "Date"
+            , A.placeholder "Unsnooze date"
             , E.on "input" E.targetValue (Signal.message address << EditSnoozeDate)
             ] []
           ]
