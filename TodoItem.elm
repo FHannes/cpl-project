@@ -41,7 +41,7 @@ view address model =
     ListItem.view
       (Signal.forwardTo address LIAction)
       model.item
-      ([ Html.span [ A.class "glyphicon glyphicon-time" ] []
+      ([ Html.span [ A.class "glyphicon glyphicon-calendar" ] []
       , Html.text <| "\160" ++ reminder.created
       ] ++ (
         if expired then

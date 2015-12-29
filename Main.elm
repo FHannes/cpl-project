@@ -107,6 +107,8 @@ mapHotkeys alt keyCodes =
       Just ToggleDoneVisibility
     else if is 65 then -- Key A
       Just ToggleAddVisibility
+    else if is 72 then -- Key H
+      Just ToggleSnoozerVisibility
     else
       Nothing
   else

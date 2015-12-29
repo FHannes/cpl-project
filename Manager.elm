@@ -23,6 +23,8 @@ type alias Model =
   , reversed: Bool
   , doneVisible: Bool
   , addVisible: Bool
+  , snoozer: String
+  , snoozeVisible: Bool
   }
 
 type Action
@@ -39,6 +41,9 @@ type Action
   | ToggleDone
   | ToggleDoneVisibility
   | ToggleAddVisibility
+  | EditSnoozeDate String
+  | Snooze
+  | ToggleSnoozerVisibility
 
 initRMField : ReminderField
 initRMField =
@@ -46,6 +51,10 @@ initRMField =
   , dlDate = DateUtils.dateToString DateUtils.getDate
   , body = ""
   }
+
+initSNField : String
+initSNField =
+  DateUtils.dateToString DateUtils.getDate
 
 init : Model
 init =
@@ -56,6 +65,8 @@ init =
   , reversed = False
   , doneVisible = True
   , addVisible = False
+  , snoozer = initSNField
+  , snoozeVisible = False
   }
 
 addMails : List Email -> Model -> Model
@@ -206,13 +217,13 @@ update action model =
       in updModel { newModel | reminder = initRMField }
     EditReminderDate value ->
       let rm = model.reminder
-      in updModel { model | reminder = { rm | date = value, dlDate = value } }
+      in { model | reminder = { rm | date = value, dlDate = value } }
     EditDeadlineDate value ->
       let rm = model.reminder
-      in updModel { model | reminder = { rm | dlDate = value, date = value } }
+      in { model | reminder = { rm | dlDate = value, date = value } }
     EditReminderBody value ->
       let rm = model.reminder
-      in updModel { model | reminder = { rm | body = value } }
+      in { model | reminder = { rm | body = value } }
     MoveSel next ->
       if next then
         updModel { model | selected = model.selected + 1 }
@@ -243,7 +254,21 @@ update action model =
     ToggleDoneVisibility ->
       updModel { model | doneVisible = not model.doneVisible }
     ToggleAddVisibility ->
-      updModel { model | addVisible = not model.addVisible }
+      { model | addVisible = not model.addVisible }
+    EditSnoozeDate value ->
+      { model | snoozer = value }
+    Snooze ->
+      case getSelected model of
+        Nothing -> model
+        Just (id, im) ->
+          let
+            action = ListItem.Snooze <| Result.withDefault (Date.fromTime 0) (Date.fromString model.snoozer)
+            newModel = { model | snoozer = initSNField }
+          in case im of
+            Mail mm -> update (MailAction id (MailItem.LIAction action)) newModel
+            Todo mm -> update (TodoAction id (TodoItem.LIAction action)) newModel
+    ToggleSnoozerVisibility ->
+      { model | snoozeVisible = not model.snoozeVisible}
 
 -- VIEW
 
@@ -323,6 +348,39 @@ viewAddReminder address model =
       ]
     ]
 
+viewSnoozer : Signal.Address Action -> Model -> Html
+viewSnoozer address model =
+  Html.div [ A.class "panel panel-default" ]
+    [ Html.div [ A.class "panel-heading" ]
+      [ Html.h4 []
+        [ Html.span [ A.class "glyphicon glyphicon-time" ] []
+        , Html.text "\160Snoozer"
+        ]
+      ]
+    , Html.div [ A.class "panel-body" ]
+      [ Html.form [ onAddReminder address Snooze ]
+        [ Html.div [ A.class "form-group" ]
+          [ Html.label [ A.attribute "for" "snooze-date" ]
+            [ Html.text "Date" ]
+          , Html.input
+            [ A.attribute "type" "date"
+            , A.class "form-control"
+            , A.id "snooze-date"
+            , A.name "snooze-date"
+            , A.value model.snoozer
+            , A.placeholder "Date"
+            , E.on "input" E.targetValue (Signal.message address << EditSnoozeDate)
+            ] []
+          ]
+        , Html.button
+          [ A.attribute "type" "submit"
+          , A.class "btn btn-default pull-right"
+          ]
+          [ Html.text "Snooze" ]
+        ]
+      ]
+    ]
+
 viewHotkeys : Html
 viewHotkeys =
   Html.div [ A.class "panel panel-default" ]
@@ -379,7 +437,13 @@ viewHotkeys =
         [ Html.span [ A.class "label label-default" ] [ Html.text "Alt" ]
         , Html.text "\160+\160"
         , Html.span [ A.class "label label-default" ] [ Html.text "A" ]
-        , Html.text ": Toggle the visibility of \"Add Reminder\" panelm."
+        , Html.text ": Toggle the visibility of \"Add Reminder\" panel."
+        ]
+      , Html.p []
+        [ Html.span [ A.class "label label-default" ] [ Html.text "Alt" ]
+        , Html.text "\160+\160"
+        , Html.span [ A.class "label label-default" ] [ Html.text "H" ]
+        , Html.text ": Toggle the visibility of \"Snoozer\" panel."
         ]
       ]
     ]
@@ -413,10 +477,9 @@ view address model =
       [ Html.div [ A.class "col-md-8" ]
         [ viewItems address model ]
       , Html.div [ A.class "col-md-4" ]
-        (
-          if model.addVisible then
-            [ viewAddReminder address model, viewHotkeys ]
-          else
-            [ viewHotkeys ]
-        )
+        ((
+          if model.addVisible then [ viewAddReminder address model ] else []
+        ) ++ (
+          if model.snoozeVisible then [ viewSnoozer address model ] else []
+        ) ++ [ viewHotkeys ])
       ]
