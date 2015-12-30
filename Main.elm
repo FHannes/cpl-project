@@ -11,6 +11,7 @@ import Set exposing ( Set )
 import Signal
 import Time
 import Task exposing ( Task )
+import Task.Extra
 
 import MailFetcher exposing ( ServerMails )
 import Manager exposing ( Action (..) )
@@ -81,8 +82,12 @@ import Static exposing ( Email )
 
 
 -- * Periodically check for e-mails from Json (same url).
--- Status: Completed / Attempted / Unattempted
+-- Status: Completed
 -- Summary:
+--   The task to retrieve the emails from the server has been set up to be
+--   executed once every minute. The library "NoRedInk/elm-task-extra" was used
+--   to easily set up the loop. The system was altered to prevent duplicate
+--   Email instances from being added.
 
 
 -- * Add persistence to your application by using Html local storage so that
@@ -155,7 +160,9 @@ state =
 
 port runner : Task Http.Error ()
 port runner =
-  MailFetcher.fetch `Task.andThen` (AddMails >> Just >> Signal.send mailbox.address)
+  Task.Extra.loop Time.minute <|
+    MailFetcher.fetch `Task.andThen`
+      (AddMails >> Just >> Signal.send mailbox.address)
 
 main : Signal Html
 main =

@@ -71,13 +71,30 @@ init =
   , snoozeVisible = False
   }
 
+containsMail : Email -> List (ID, ItemModel) -> Bool
+containsMail mail list =
+  case List.head list of
+    Nothing -> False
+    Just (id, im) ->
+      case im of
+        Todo mm ->
+          containsMail mail <| List.drop 1 list
+        Mail mm ->
+          if mm.data == mail then
+            True
+          else
+            containsMail mail <| List.drop 1 list
+
 addMails : List Email -> Model -> Model
 addMails mails model =
   case List.head mails of
     Nothing -> model
     Just mail ->
-      let newModel = addMails (List.drop 1 mails) { model | curId = model.curId + 1 }
-      in { newModel | items = ( model.curId, Mail <| MailItem.init mail) :: newModel.items }
+      if containsMail mail model.items then
+        model
+      else
+        let newModel = addMails (List.drop 1 mails) { model | curId = model.curId + 1 }
+        in { newModel | items = ( model.curId, Mail <| MailItem.init mail) :: newModel.items }
 
 addTodos : List Reminder -> Model -> Model
 addTodos reminders model =
