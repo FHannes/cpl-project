@@ -14,7 +14,7 @@ type alias Model =
   , selected: Bool
   , snoozed: (Maybe Date)
   }
-type Action = Pin | MarkDone | SetSelected Bool | Snooze Date
+type Action = Pin | MarkDone | SetSelected Bool | Snooze Date | Unsnooze
 
 init : Date -> Model
 init iDate =
@@ -40,6 +40,7 @@ update action model =
     MarkDone -> { model | done = not model.done }
     SetSelected sel -> { model | selected = sel }
     Snooze date -> { model | snoozed = Just date }
+    Unsnooze -> { model | snoozed = Nothing }
 
 -- VIEW
 
@@ -49,6 +50,18 @@ view address model title subtitle content =
     [ Html.div [ A.class "panel-heading" ]
       [ Html.div [ A.class "pull-right" ]
         [ Html.div [ A.class "btn-group" ]
+          ((
+            if isSnoozed model then
+              [ Html.button
+                [ A.class "btn btn-default"
+                , A.title "Unsnooze"
+                , E.onClick address Unsnooze
+                ]
+                [ Html.span [ A.class "glyphicon glyphicon-flash" ] [] ]
+              ]
+            else
+              []
+          ) ++
           [ Html.button
             [ A.class <| "btn btn-" ++ (if model.done then "success" else "default")
             , A.title (if model.done then "Undo" else "Mark as Done")
@@ -61,9 +74,18 @@ view address model title subtitle content =
             , E.onClick address Pin
             ]
             [ Html.span [ A.class "glyphicon glyphicon-pushpin" ] [] ]
-          ]
+          ])
         ]
-      , Html.h4 [] title
+      , Html.h4 []
+        (title ++ (
+          if isSnoozed model then
+            [ Html.text <| "\160"
+            , Html.span [ A.class "label label-warning" ]
+              [ Html.text "SNOOZED" ]
+            ]
+          else
+            []
+        ))
       , Html.p [] subtitle
       ]
     , Html.div [ A.class "panel-body" ] content

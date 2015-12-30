@@ -16,6 +16,7 @@ import Task.Extra
 import MailFetcher exposing ( ServerMails )
 import Manager exposing ( Action (..) )
 import Static exposing ( Email )
+import Storage
 
 -- Name: Frédéric Hannes
 -- Student ID: S0218251
@@ -72,13 +73,9 @@ import Static exposing ( Email )
 -- Status: Completed
 -- Summary:
 --   An asynchronous html request was implemented which retrieves the emails
---   from the server on startup. I was unable to retrieve the emails from the
---   original URL due to the browser prevent cross-site requests. To be able to
---   retrieve the data, I set up a php relay script which defines the CORS
---   header Access-Control-Allow-Origin. Various attempts to retrieve the data
---   from the original URL through the Http API failed; this way I was able to
---   demonstrate the correct workings of the application in handling the json
---   defined emails. The php relay script is included as "forward.php".
+--   from the server on startup. A a php relay script is used to define the CORS
+--   header Access-Control-Allow-Origin, this script is included in the project
+--   as "forward.php".
 
 
 -- * Periodically check for e-mails from Json (same url).
@@ -92,14 +89,20 @@ import Static exposing ( Email )
 
 -- * Add persistence to your application by using Html local storage so that
 -- * newly added reminders are still there after a reload.
--- Status: Completed / Attempted / Unattempted
+-- Status: Attempted
 -- Summary:
+--   I started the implementation of this extension by defining JSON encoding
+--   functions in Storage.elm to serialize the application data for storage in
+--   the html local storage, but was unable to finish the entire extension.
 
 
 -- * Come up with your own extension!
--- http://getbootstrap.com/components/#pagination ?
--- Status: Completed / Attempted / Unattempted
+-- Status: Completed
 -- Summary:
+--   The hotkey was Ctrl+Y was added to toggle the visibility of snoozed items.
+--   All snoozed items are visually marked and have an additional button that
+--   can be used to unsnooze them. The hotkey Ctrl+U was also added to unsnooze
+--   the selected item.
 
 
 -- Start of program
@@ -129,6 +132,10 @@ mapHotkeys alt keyCodes =
       Just ToggleAddVisibility
     else if is 72 then -- Key H
       Just ToggleSnoozerVisibility
+    else if is 89 then -- Key Y
+      Just ToggleSnoozed
+    else if is 85 then -- Key U
+      Just DoUnsnooze
     else
       Nothing
   else

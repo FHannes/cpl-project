@@ -26,6 +26,7 @@ type alias Model =
   , addVisible: Bool
   , snoozer: String
   , snoozeVisible: Bool
+  , snoozedItemsVisible: Bool
   }
 
 type Action
@@ -46,6 +47,8 @@ type Action
   | Snooze
   | ToggleSnoozerVisibility
   | AddMails ServerMails
+  | ToggleSnoozed
+  | DoUnsnooze
 
 initRMField : ReminderField
 initRMField =
@@ -69,6 +72,7 @@ init =
   , addVisible = False
   , snoozer = initSNField
   , snoozeVisible = False
+  , snoozedItemsVisible = False
   }
 
 containsMail : Email -> List (ID, ItemModel) -> Bool
@@ -140,18 +144,19 @@ modelOrderReversed (id1, im1) (id2, im2) =
         t2 = Date.toTime li2.date
       in if t1 == t2 then EQ else if t1 > t2 then LT else GT
 
-getDone : Bool -> List (ID, ItemModel) -> List (ID, ItemModel)
-getDone done list =
+getDone : Bool -> Bool -> List (ID, ItemModel) -> List (ID, ItemModel)
+getDone snoozedVisible done list =
   case List.head list of
     Nothing -> []
     Just (id, im) ->
       let
         li = getListItem im
       in
-        if (ListItem.isSnoozed li) || (li.done /= done) then
-          getDone done (List.drop 1 list)
+        if (not snoozedVisible) && (ListItem.isSnoozed li) ||
+          (li.done /= done) then
+          getDone snoozedVisible done (List.drop 1 list)
         else
-          (id, im) :: (getDone done (List.drop 1 list))
+          (id, im) :: (getDone snoozedVisible done (List.drop 1 list))
 
 getSelected : Model -> Maybe (ID, ItemModel)
 getSelected model =
@@ -159,19 +164,19 @@ getSelected model =
 
 -- UPDATE
 
-updSelection : Int -> Int -> List (ID, ItemModel) -> List (ID, ItemModel)
-updSelection sel idx list =
+updSelection : Bool -> Int -> Int -> List (ID, ItemModel) -> List (ID, ItemModel)
+updSelection snoozedVisible sel idx list =
   case List.head list of
     Nothing -> []
     Just (id, im) ->
       let
         li = getListItem im
-        snoozed = ListItem.isSnoozed li
+        snoozed = (ListItem.isSnoozed li) && (not snoozedVisible)
         next =
           if snoozed then
-            updSelection sel idx (List.drop 1 list)
+            updSelection snoozedVisible sel idx (List.drop 1 list)
           else
-            updSelection sel (idx + 1) (List.drop 1 list)
+            updSelection snoozedVisible sel (idx + 1) (List.drop 1 list)
         action = ListItem.SetSelected <| (not snoozed) && (sel == idx)
       in
         case im of
@@ -190,8 +195,8 @@ sortModel model =
 updModel : Model -> Model
 updModel model =
   let
-    completeItems = getDone True model.items
-    incompleteItems = getDone False model.items
+    completeItems = getDone model.snoozedItemsVisible True model.items
+    incompleteItems = getDone model.snoozedItemsVisible False model.items
     visibleItems =
       if model.doneVisible then
         List.length (completeItems ++ incompleteItems)
@@ -201,7 +206,17 @@ updModel model =
       if visibleItems == 0 then 0 else model.selected % visibleItems
     newModel =
       sortModel { model | selected = newSelected }
-  in { newModel | items = updSelection newModel.selected 0 newModel.items }
+  in { newModel | items = updSelection model.snoozedItemsVisible
+    newModel.selected 0 newModel.items }
+
+updSelected : ListItem.Action -> Model -> Model
+updSelected action model =
+  case getSelected model of
+    Nothing -> model
+    Just (id, im) ->
+      case im of
+        Mail mm -> update (MailAction id (MailItem.LIAction action)) model
+        Todo mm -> update (TodoAction id (TodoItem.LIAction action)) model
 
 update : Action -> Model -> Model
 update action model =
@@ -251,21 +266,9 @@ update action model =
         Nothing -> model
         Just (id, im) -> update (MailAction id MailItem.Expand) model
     TogglePinned ->
-      case getSelected model of
-        Nothing -> model
-        Just (id, im) ->
-          let action = ListItem.Pin
-          in case im of
-            Mail mm -> update (MailAction id (MailItem.LIAction action)) model
-            Todo mm -> update (TodoAction id (TodoItem.LIAction action)) model
+      updSelected ListItem.Pin model
     ToggleDone ->
-      case getSelected model of
-        Nothing -> model
-        Just (id, im) ->
-          let action = ListItem.MarkDone
-          in case im of
-            Mail mm -> update (MailAction id (MailItem.LIAction action)) model
-            Todo mm -> update (TodoAction id (TodoItem.LIAction action)) model
+      updSelected ListItem.MarkDone model
     ToggleDoneVisibility ->
       updModel { model | doneVisible = not model.doneVisible }
     ToggleAddVisibility ->
@@ -273,19 +276,20 @@ update action model =
     EditSnoozeDate value ->
       { model | snoozer = value }
     Snooze ->
-      case getSelected model of
-        Nothing -> model
-        Just (id, im) ->
-          let
-            action = ListItem.Snooze <| Result.withDefault (Date.fromTime 0) (Date.fromString model.snoozer)
-            newModel = { model | snoozer = initSNField }
-          in case im of
-            Mail mm -> update (MailAction id (MailItem.LIAction action)) newModel
-            Todo mm -> update (TodoAction id (TodoItem.LIAction action)) newModel
+      let
+        action = ListItem.Snooze <| Result.withDefault (Date.fromTime 0)
+          (Date.fromString model.snoozer)
+        newModel = { model | snoozer = initSNField }
+      in
+        updSelected action newModel
     ToggleSnoozerVisibility ->
       { model | snoozeVisible = not model.snoozeVisible }
     AddMails serverMails ->
       updModel <| addMails serverMails.mails model
+    ToggleSnoozed ->
+      { model | snoozedItemsVisible = not model.snoozedItemsVisible }
+    DoUnsnooze ->
+      updSelected ListItem.Unsnooze model
 
 -- VIEW
 
@@ -398,6 +402,15 @@ viewSnoozer address model =
       ]
     ]
 
+viewHotkey : String -> String -> Html
+viewHotkey key desc =
+  Html.p []
+    [ Html.span [ A.class "label label-default" ] [ Html.text "Alt" ]
+    , Html.text "\160+\160"
+    , Html.span [ A.class "label label-default" ] [ Html.text key ]
+    , Html.text <| ": " ++ desc
+    ]
+
 viewHotkeys : Html
 viewHotkeys =
   Html.div [ A.class "panel panel-default" ]
@@ -408,68 +421,27 @@ viewHotkeys =
         ]
       ]
     , Html.div [ A.class "panel-body" ]
-      [ Html.p []
-        [ Html.span [ A.class "label label-default" ] [ Html.text "Alt" ]
-        , Html.text "\160+\160"
-        , Html.span [ A.class "label label-default" ] [ Html.text "J" ]
-        , Html.text ": Select the next item."
-        ]
-      , Html.p []
-        [ Html.span [ A.class "label label-default" ] [ Html.text "Alt" ]
-        , Html.text "\160+\160"
-        , Html.span [ A.class "label label-default" ] [ Html.text "K" ]
-        , Html.text ": Select the previous item."
-        ]
-      , Html.p []
-        [ Html.span [ A.class "label label-default" ] [ Html.text "Alt" ]
-        , Html.text "\160+\160"
-        , Html.span [ A.class "label label-default" ] [ Html.text "O" ]
-        , Html.text ": Toggle truncation of the selected item."
-        ]
-      , Html.p []
-        [ Html.span [ A.class "label label-default" ] [ Html.text "Alt" ]
-        , Html.text "\160+\160"
-        , Html.span [ A.class "label label-default" ] [ Html.text "P" ]
-        , Html.text ": Toggle the \"Done\" status of the selected item."
-        ]
-      , Html.p []
-        [ Html.span [ A.class "label label-default" ] [ Html.text "Alt" ]
-        , Html.text "\160+\160"
-        , Html.span [ A.class "label label-default" ] [ Html.text "X" ]
-        , Html.text ": Toggle the \"Pinned\" status of the selected item."
-        ]
-      , Html.p []
-        [ Html.span [ A.class "label label-default" ] [ Html.text "Alt" ]
-        , Html.text "\160+\160"
-        , Html.span [ A.class "label label-default" ] [ Html.text "S" ]
-        , Html.text ": Hold to sort all items in reverse, ignoring the pinned status."
-        ]
-      , Html.p []
-        [ Html.span [ A.class "label label-default" ] [ Html.text "Alt" ]
-        , Html.text "\160+\160"
-        , Html.span [ A.class "label label-default" ] [ Html.text "G" ]
-        , Html.text ": Toggle the visibility of completed items."
-        ]
-      , Html.p []
-        [ Html.span [ A.class "label label-default" ] [ Html.text "Alt" ]
-        , Html.text "\160+\160"
-        , Html.span [ A.class "label label-default" ] [ Html.text "A" ]
-        , Html.text ": Toggle the visibility of \"Add Reminder\" panel."
-        ]
-      , Html.p []
-        [ Html.span [ A.class "label label-default" ] [ Html.text "Alt" ]
-        , Html.text "\160+\160"
-        , Html.span [ A.class "label label-default" ] [ Html.text "H" ]
-        , Html.text ": Toggle the visibility of \"Snoozer\" panel."
-        ]
+      [ viewHotkey "J" "Select the next item."
+      , viewHotkey "K" "Select the previous item."
+      , viewHotkey "O" "Toggle truncation of the selected item."
+      , viewHotkey "P" "Toggle the \"Done\" status of the selected item."
+      , viewHotkey "X" "Toggle the \"Pinned\" status of the selected item."
+      , viewHotkey "S" "Hold to sort all items in reverse, ignoring the pinned status."
+      , viewHotkey "G" "Toggle the visibility of completed items."
+      , viewHotkey "A" "Toggle the visibility of \"Add Reminder\" panel."
+      , viewHotkey "H" "Toggle the visibility of \"Snoozer\" panel."
+      , viewHotkey "Y" "Toggle the visibility of snoozed items."
+      , viewHotkey "U" "Unsnooze a selected snoozed item."
       ]
     ]
 
 viewItems : Signal.Address Action -> Model -> Html
 viewItems address model =
   let
-    completeItems = List.map (viewItem address) (getDone True model.items)
-    incompleteItems = List.map (viewItem address) (getDone False model.items)
+    completeItems = List.map (viewItem address)
+      (getDone model.snoozedItemsVisible True model.items)
+    incompleteItems = List.map (viewItem address)
+      (getDone model.snoozedItemsVisible False model.items)
   in
     Html.div []
       (
@@ -485,7 +457,7 @@ viewItems address model =
 view : Signal.Address Action -> Model -> Html
 view address model =
   let
-    doneItems = getDone False model.items
+    doneItems = getDone model.snoozedItemsVisible False model.items
   in
     Html.div
       [ A.class "container"
