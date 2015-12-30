@@ -1,4 +1,4 @@
-module MailFetcher where
+module MailFetcher (ServerMails, fetch) where
 
 import Http
 import Json.Decode as Json exposing ( Decoder, (:=) )
@@ -7,6 +7,18 @@ import Task exposing ( Task )
 import Static exposing ( Email )
 
 type alias ServerMails = { mails: List Email }
+
+mailRequest : Http.Request
+mailRequest =
+  { verb = "GET"
+  , headers =
+    [ ("Origin", "http://people.cs.kuleuven.be")
+    , ("Access-Control-Request-Method", "GET")
+    , ("Access-Control-Request-Headers", "X-Custom-Header")
+    ]
+  , url = "http://people.cs.kuleuven.be/~bob.reynders/2015-2016/emails.json"
+  , body = Http.empty
+  }
 
 mailDecoder : Decoder ServerMails
 mailDecoder =
@@ -23,7 +35,4 @@ mailDecoder =
 
 fetch : Task Http.Error ServerMails
 fetch =
-  let
-    mailURL = "http://people.cs.kuleuven.be/~bob.reynders/2015-2016/emails.json"
-  in
-    Http.get mailDecoder mailURL
+  Http.fromJson mailDecoder <| Http.send Http.defaultSettings mailRequest

@@ -267,8 +267,8 @@ update action model =
             Todo mm -> update (TodoAction id (TodoItem.LIAction action)) newModel
     ToggleSnoozerVisibility ->
       { model | snoozeVisible = not model.snoozeVisible }
-    AddMails serverMails ->
-      updModel <| addMails serverMails.mails model
+    AddMails serverMails -> update ToggleDoneVisibility model
+      --updModel <| addMails serverMails.mails model
 
 -- VIEW
 
