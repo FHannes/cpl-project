@@ -68,8 +68,16 @@ import Static exposing ( Email )
 
 -- * On startup, read e-mails from a Json document at this url:
 -- * http://people.cs.kuleuven.be/~bob.reynders/2015-2016/emails.json
--- Status: Completed / Attempted / Unattempted
+-- Status: Completed
 -- Summary:
+--   An asynchronous html request was implemented which retrieves the emails
+--   from the server on startup. I was unable to retrieve the emails from the
+--   original URL due to the browser prevent cross-site requests. To be able to
+--   retrieve the data, I set up a php relay script which defines the CORS
+--   header Access-Control-Allow-Origin. Various attempts to retrieve the data
+--   from the original URL through the Http API failed; this way I was able to
+--   demonstrate the correct workings of the application in handling the json
+--   defined emails. The php relay script is included as "forward.php".
 
 
 -- * Periodically check for e-mails from Json (same url).
